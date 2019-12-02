@@ -23,15 +23,13 @@ class TestIntCode(unittest.TestCase):
 
     def test_add(self):
         """Add operation should work correclty"""
-        ic, memory = intcode._add(0, [1, 4, 5, 0, 10, 20])
-        self.assertEqual(ic, 4)
-        self.assertListEqual(memory, [30, 4, 5, 0, 10, 20])
+        result = intcode.run_intcode([1, 5, 6, 0, 99, 10, 20])
+        self.assertListEqual(result, [30, 5, 6, 0, 99, 10, 20])
 
     def test_mulitply(self):
-        """Multipy operation should work correclty"""
-        ic, memory = intcode._multiply(0, [2, 4, 5, 0, 10, 20])
-        self.assertEqual(ic, 4)
-        self.assertListEqual(memory, [200, 4, 5, 0, 10, 20])
+        """Multiply operation should work correclty"""
+        result = intcode.run_intcode([2, 5, 6, 0, 99, 10, 20])
+        self.assertListEqual(result, [200, 5, 6, 0, 99, 10, 20])
 
     def test_program1(self):
         """Test program 1 from AoC Day 2 should run correctly"""
