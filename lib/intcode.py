@@ -1,20 +1,20 @@
-def _add(ic, memory):
+def _add(ip, memory):
     """Performs an add operation.
-    Returns the new instruction counter and memory
+    Returns the new instruction pointer and memory
     """
 
-    memory[memory[ic + 3]] = memory[memory[ic + 1]] + memory[memory[ic + 2]]
-    ic = ic + 4
-    return (ic, memory)
+    memory[memory[ip + 3]] = memory[memory[ip + 1]] + memory[memory[ip + 2]]
+    ip = ip + 4
+    return (ip, memory)
 
-def _multiply(ic, memory):
+def _multiply(ip, memory):
     """Performs a multipy operation.
-    Returns the new instruction counter and memory
+    Returns the new instruction pointer and memory
     """
 
-    memory[memory[ic + 3]] = memory[memory[ic + 1]] * memory[memory[ic + 2]]
-    ic = ic + 4
-    return (ic, memory)
+    memory[memory[ip + 3]] = memory[memory[ip + 1]] * memory[memory[ip + 2]]
+    ip = ip + 4
+    return (ip, memory)
 
 _operations = {
     1: _add,
@@ -42,11 +42,11 @@ def run_intcode(memory):
         The Intcode provided as list of int values
     """
 
-    ic = 0
-    while ic < len(memory) and memory[ic] != 99:
-        opcode = memory[ic]
+    ip = 0
+    while ip < len(memory) and memory[ip] != 99:
+        opcode = memory[ip]
         if opcode in _operations:
-            ic, memory = _operations[opcode](ic, memory)
+            ip, memory = _operations[opcode](ip, memory)
         else:
             raise IndexError("Invalid opcode: %s" % opcode)
 
