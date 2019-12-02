@@ -30,24 +30,6 @@ def run_intcode(inputfile, noun=None, verb=None):
 
     return intcode.run_intcode(memory)
 
-test_result1 = run_intcode(os.path.join(currentdir, "testinput1.txt"))
-assert test_result1[0] == 3500
-assert test_result1[3] == 70
-
-test_result2 = run_intcode(os.path.join(currentdir, "testinput2.txt"))
-assert test_result2[0] == 2
-
-test_result3 = run_intcode(os.path.join(currentdir, "testinput3.txt"))
-assert test_result3[3] == 6
-
-test_result4 = run_intcode(os.path.join(currentdir, "testinput4.txt"))
-assert test_result4[5] == 9801
-
-test_result5 = run_intcode(os.path.join(currentdir, "testinput5.txt"))
-assert test_result5[0] == 30
-assert test_result5[4] == 2
-
-
 result = run_intcode(os.path.join(currentdir, "input.txt"), 12, 2)
 print("Part 1: %s" % (result[0]))
 
