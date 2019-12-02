@@ -48,6 +48,6 @@ def run_intcode(memory):
         if opcode in _operations:
             ic, memory = _operations[opcode](ic, memory)
         else:
-            raise Exception("Invalid opcode: %s" % opcode)
+            raise IndexError("Invalid opcode: %s" % opcode)
 
     return memory
