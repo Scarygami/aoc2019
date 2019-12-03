@@ -65,38 +65,37 @@ def create_grid(inputfile):
 
     return (grid, intersections)
 
-def closest_intersection_manhattan(inputfile):
-    """Returns the distance to closest intersection based on Manhattan Distance
+def manhattan_distance(_, cell):
+    return abs(cell[0]) + abs(cell[1])
+
+def steps_distance(grid, cell):
+    return sum(grid[cell].values())
+
+def closest_intersection(inputfile, distance_function):
+    """Returns the distance to closest intersection
 
     inputfile : str
         name/path of puzzle input file
+
+    distance_function : function
+        Function to calculate the distance
+        Will get the grid and one cell-coordinate as parameters
     """
+
     grid, intersections = create_grid(inputfile)
     if len(intersections) == 0:
         return 0
-    intersection = min(intersections, key=lambda i: abs(i[0]) + abs(i[1]))
-    return abs(intersection[0]) + abs(intersection[1])
+    intersection = min(intersections, key=lambda i: distance_function(grid, i))
+    return distance_function(grid, intersection)
 
-assert closest_intersection_manhattan(os.path.join(currentdir, "testinput1.txt")) == 6
-assert closest_intersection_manhattan(os.path.join(currentdir, "testinput2.txt")) == 159
-assert closest_intersection_manhattan(os.path.join(currentdir, "testinput3.txt")) == 135
+assert closest_intersection(os.path.join(currentdir, "testinput1.txt"), manhattan_distance) == 6
+assert closest_intersection(os.path.join(currentdir, "testinput2.txt"), manhattan_distance) == 159
+assert closest_intersection(os.path.join(currentdir, "testinput3.txt"), manhattan_distance) == 135
 
-print("Part 1: %s" % (closest_intersection_manhattan(os.path.join(currentdir, "input.txt"))))
+print("Part 1: %s" % (closest_intersection(os.path.join(currentdir, "input.txt"), manhattan_distance)))
 
-def closest_intersection_steps(inputfile):
-    """Returns the distance to closest intersection based on number of steps
+assert closest_intersection(os.path.join(currentdir, "testinput1.txt"), steps_distance) == 30
+assert closest_intersection(os.path.join(currentdir, "testinput2.txt"), steps_distance) == 610
+assert closest_intersection(os.path.join(currentdir, "testinput3.txt"), steps_distance) == 410
 
-    inputfile : str
-        name/path of puzzle input file
-    """
-    grid, intersections = create_grid(inputfile)
-    if len(intersections) == 0:
-        return 0
-    intersection = min(intersections, key=lambda i: sum(grid[i].values()))
-    return sum(grid[intersection].values())
-
-assert closest_intersection_steps(os.path.join(currentdir, "testinput1.txt")) == 30
-assert closest_intersection_steps(os.path.join(currentdir, "testinput2.txt")) == 610
-assert closest_intersection_steps(os.path.join(currentdir, "testinput3.txt")) == 410
-
-print("Part 2: %s" % (closest_intersection_steps(os.path.join(currentdir, "input.txt"))))
+print("Part 2: %s" % (closest_intersection(os.path.join(currentdir, "input.txt"), steps_distance)))
