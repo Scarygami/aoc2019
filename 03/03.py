@@ -28,11 +28,11 @@ def draw_line(grid, number, instructions):
     y = 0
     counter = 0
     for instruction in instructions.split(","):
-        direction = directions[instruction[0]]
+        dx, dy = directions[instruction[0]]
         steps = int(instruction[1:])
         for _ in range(steps):
-            x = x + direction[0]
-            y = y + direction[1]
+            x = x + dx
+            y = y + dy
             counter = counter + 1
             cell = grid.get((x,y), {})
             if number in cell:
@@ -85,8 +85,7 @@ def closest_intersection(inputfile, distance_function):
     grid, intersections = create_grid(inputfile)
     if len(intersections) == 0:
         return 0
-    intersection = min(intersections, key=lambda i: distance_function(grid, i))
-    return distance_function(grid, intersection)
+    return min([distance_function(grid, cell) for cell in intersections])
 
 assert closest_intersection(os.path.join(currentdir, "testinput1.txt"), manhattan_distance) == 6
 assert closest_intersection(os.path.join(currentdir, "testinput2.txt"), manhattan_distance) == 159
