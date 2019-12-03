@@ -36,13 +36,13 @@ def draw_line(grid, number, instructions):
             counter = counter + 1
             cell = grid.get((x,y), {})
             if number in cell:
+                # Been here already before
                 pass
-            elif len(cell) > 0:
-                intersections.append((x, y))
-
-            cell[number] = counter
-
-            grid[(x, y)] = cell
+            else:
+                if len(cell) > 0:
+                    intersections.append((x, y))
+                cell[number] = counter
+                grid[(x, y)] = cell
 
     return intersections
 
