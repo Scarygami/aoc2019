@@ -48,7 +48,7 @@ def draw_line(grid, number, instructions):
 
 def create_grid(inputfile):
     """Creates the grid based on instruction in input file.
-    Returns the grid as dict and a list of intersecions.
+    Returns the grid as dict and a list of intersections.
 
     inputfile : str
         name/path of puzzle input file
