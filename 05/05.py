@@ -6,8 +6,8 @@ sys.path.insert(0, parentdir)
 
 from lib import intcode
 
-print("Use '1' as input for part 1:")
-intcode.run_intcode(intcode.read_intcode(os.path.join(currentdir, "input.txt")))
+_, outputs = intcode.run_intcode(intcode.read_intcode(os.path.join(currentdir, "input.txt")), [1])
+print("Part 1: %s" % outputs.pop())
 
-print("Use '5' as input for part 2:")
-intcode.run_intcode(intcode.read_intcode(os.path.join(currentdir, "input.txt")))
+_, outputs = intcode.run_intcode(intcode.read_intcode(os.path.join(currentdir, "input.txt")), [5])
+print("Part 2: %s" % outputs.pop())
