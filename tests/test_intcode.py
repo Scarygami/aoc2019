@@ -19,7 +19,7 @@ class TestIntCode(unittest.TestCase):
 
     def test_exception(self):
         """Incorrect Op Codes should raise an IndexError"""
-        self.assertRaises(IndexError, intcode.run_intcode, [5, 0, 0, 0])
+        self.assertRaises(IndexError, intcode.run_intcode, [77, 0, 0, 0])
 
     def test_add(self):
         """Add operation should work correclty"""
@@ -55,6 +55,16 @@ class TestIntCode(unittest.TestCase):
         """Test program 5 from AoC Day 2 should run correctly"""
         result = intcode.run_intcode(self.load_program("testinput5.txt"))
         self.assertListEqual(result, [30, 1, 1, 4, 2, 5, 6, 0, 99])
+
+    def test_program6(self):
+        """Test program 1 from AoC Day 5 should run correctly"""
+        result = intcode.run_intcode([1002, 4, 3, 4, 33])
+        self.assertListEqual(result, [1002, 4, 3, 4, 99])
+
+    def test_program7(self):
+        """Test program 2 from AoC Day 5 should run correctly"""
+        result = intcode.run_intcode([1101, 100, -1, 4, 0])
+        self.assertListEqual(result, [1101, 100, -1, 4, 99])
 
 if __name__ == '__main__':
     unittest.main()
