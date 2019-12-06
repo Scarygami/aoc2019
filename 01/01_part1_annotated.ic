@@ -1,0 +1,51 @@
+### Read numbers until zero is read
+# 0: in mass
+3,41,
+# 2: jf mass, end
+1006,41,38,
+
+##### Implementation of integer division
+### Start with div = 0
+# 5: add 0, 0, div
+1101,0,0,42,
+
+### If number < 3 we are done
+# 9: lt mass, 3, tmp1
+1007,41,3,43,
+
+# 13: jt tmp1, enddiv
+1005,43,27,
+
+### add 1 to div and substract 3 from number
+# 16: add div, 1, div
+1001,42,1,42,
+
+# 20: add mass, -3, mass
+1001,41,-3,41,
+
+### loop for integer division
+# 24: jt 1, 9
+1105,1,9,
+#####
+
+### substract 2 from result
+# 27 (enddiv): add div, -2, mass
+1001,42,-2,41,
+
+### Add the result to the sum
+# 31: add total, mass, total
+1,44,41,44,
+
+### jump back to start
+# 35: jt 1, 0
+1105,1,0,
+
+### output the result and end program
+# 38 (end): out total
+4, 44,
+# 40: Program end
+99,
+
+### Working memory starts here
+# 41: mass, 42: div, 43: tmp1, 44: total
+0,0,0,0

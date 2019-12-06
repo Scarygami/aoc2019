@@ -15,6 +15,8 @@ def load_input(filename):
     return inputs
 
 code1 = intcode.read_intcode(os.path.join(currentdir, "01_part1.ic"))
+
+print("Testcases")
 _, outputs = intcode.run_intcode(code1, [12, 0])
 assert outputs.pop() == 2
 _, outputs = intcode.run_intcode(code1, [14, 0])
@@ -29,5 +31,6 @@ inputs = load_input(os.path.join(currentdir, "testinput.txt"))
 _, outputs = intcode.run_intcode(code1, inputs)
 assert outputs.pop() == 34241
 
-#inputs = load_input(os.path.join(currentdir, "input.txt"))
-#intcode.run_intcode(code1, inputs)
+print("Part 1")
+inputs = load_input(os.path.join(currentdir, "input.txt"))
+intcode.run_intcode(code1, inputs)
