@@ -97,7 +97,7 @@ def main():
     args = parser.parse_args()
 
     if args.input == args.output:
-        arg_parser.error("Input and output have to be different files")
+        parser.error("Input and output have to be different files")
         return
 
     intcode = compile(args.input)

@@ -1,11 +1,17 @@
+import argparse
+
 class State(object):
     """Representation of the current state of the Intcode application"""
 
-    def __init__(self, ip, memory, inputs=[], outputs=[]):
+    def __init__(self, ip, memory, inputs=[], outputs=[], debug=False):
         self.ip = ip
         self.memory = [m for m in memory]
         self.inputs = [i for i in inputs]
         self.outputs = [o for o in outputs]
+        self.debug = debug
+
+    def __repr__(self):
+        return "IP: %s\nMemory: %s" % (self.ip, self.memory)
 
     def getValue(self, count, mode):
         """Retrieves a parameter value from memory
@@ -66,7 +72,10 @@ def _output(state, mode):
     """Outputs a value from memory to stdout and state."""
     val = state.getValue(1, mode)
     state.outputs.append(val)
-    print("%s: %s" % (state.ip, val))
+    if state.debug:
+        print("%s: %s" % (state.ip, val))
+    else:
+        print("%s" % val)
 
     state.ip = state.ip + 2
 
@@ -119,6 +128,7 @@ def read_intcode(inputfile):
     """Reads Intcode from a file and returns a memory list
 
     Adjusted to allow intcode in multiple lines with #-lines for comments
+    Also allows space-separated or newline-separated input without commas
 
     Parameters
     ----------
@@ -131,10 +141,11 @@ def read_intcode(inputfile):
         for line in f:
             if line[0] == "#":
                 continue
-            fullinput = fullinput + line
-        return [int(part) for part in fullinput.split(",")]
+            fullinput = fullinput + " " + line
+        fullinput = fullinput.replace(",", " ")
+        return [int(part) for part in fullinput.split(" ") if part.strip() != ""]
 
-def run_intcode(memory, inputs = []):
+def run_intcode(memory, inputs=[], debug=False):
     """Runs the Intcode provided as list
 
     Parameters
@@ -148,9 +159,11 @@ def run_intcode(memory, inputs = []):
     Returns the latest version of the memory and the created outputs
     """
 
-    state = State(0, memory, inputs, [])
+    state = State(0, memory, inputs, [], debug)
 
     while state.ip < len(state.memory):
+        if state.debug:
+            print(state)
         op = state.memory[state.ip]
         opcode = op % 100
         if opcode == 99:
@@ -162,3 +175,24 @@ def run_intcode(memory, inputs = []):
             raise IndexError("Invalid opcode: %s" % opcode)
 
     return (state.memory, state.outputs)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("source", help="Source code in IntCode")
+    parser.add_argument("-i", "--input", help="Optional file with inputs for the IntCode program, comma or whitespace separated")
+    parser.add_argument("-d", "--debug", help="Whether to run the program in debug mode", action="store_true")
+    args = parser.parse_args()
+
+    source = read_intcode(args.source)
+
+    inputs = []
+    if args.input:
+        inputs = read_intcode(args.input)
+    debug = False
+    if args.debug:
+        debug = True
+
+    run_intcode(source, inputs, debug)
+
+if __name__ == "__main__":
+    main()

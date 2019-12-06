@@ -1,0 +1,6 @@
+# Input file for IntCode with 0 to terminate the file
+12
+14
+1969
+100756
+0
