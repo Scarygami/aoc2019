@@ -1,6 +1,8 @@
 # Advent of Code 2019 / IntCode Compiler
 
-Very simplistic and not very flexible compiler from IntCode-asm to IntCode.
+Very simplistic compiler from IntCode-asm to IntCode.
+
+[Sample icasm file](https://github.com/Scarygami/aoc2019/blob/master/01/01_part1.icasm)
 
 ### Assembly syntax
 
