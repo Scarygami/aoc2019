@@ -2,6 +2,6 @@
 
 Very simplistic and not very flexible compiler from IntCode-asm to IntCode.
 
-### Assembler syntax and operation documention
+### Assembler syntax and operation documentation
 
 (TODO...)
