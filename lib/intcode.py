@@ -31,7 +31,7 @@ class State(object):
         ----------
         count: int
             Which parameter to choose for memory address, relative to ip
-        
+
         value: int
             The value to set
         """

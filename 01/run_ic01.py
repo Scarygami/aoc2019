@@ -10,13 +10,24 @@ def load_input(filename):
     with open(filename, "r") as file:
         inputs = [int(line) for line in file]
 
-    # Add an extra input so the Intcode program knows when to stop reading
+    # Add an extra zero at the end so the Intcode program knows when to stop reading
     inputs.append(0)
     return inputs
 
-code = intcode.read_intcode(os.path.join(currentdir, "01.ic"))
-inputs = load_input(os.path.join(currentdir, "testinput.txt"))
-intcode.run_intcode(code, inputs)
+code1 = intcode.read_intcode(os.path.join(currentdir, "01_part1.ic"))
+_, outputs = intcode.run_intcode(code1, [12, 0])
+assert outputs.pop() == 2
+_, outputs = intcode.run_intcode(code1, [14, 0])
+assert outputs.pop() == 2
+_, outputs = intcode.run_intcode(code1, [1969, 0])
+assert outputs.pop() == 654
+_, outputs = intcode.run_intcode(code1, [100756, 0])
+assert outputs.pop() == 33583
 
-inputs = load_input(os.path.join(currentdir, "input.txt"))
-intcode.run_intcode(code, inputs)
+
+inputs = load_input(os.path.join(currentdir, "testinput.txt"))
+_, outputs = intcode.run_intcode(code1, inputs)
+assert outputs.pop() == 34241
+
+#inputs = load_input(os.path.join(currentdir, "input.txt"))
+#intcode.run_intcode(code1, inputs)
