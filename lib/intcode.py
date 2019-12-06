@@ -118,6 +118,8 @@ _operations = {
 def read_intcode(inputfile):
     """Reads Intcode from a file and returns a memory list
 
+    Adjusted to allow intcode in multiple lines with #-lines for comments
+
     Parameters
     ----------
     inputfile : str
@@ -125,7 +127,12 @@ def read_intcode(inputfile):
     """
 
     with open(inputfile, "r") as f:
-        return [int(part) for part in f.readline().split(",")]
+        fullinput = ""
+        for line in f:
+            if line[0] == "#":
+                continue
+            fullinput = fullinput + line
+        return [int(part) for part in fullinput.split(",")]
 
 def run_intcode(memory, inputs = []):
     """Runs the Intcode provided as list

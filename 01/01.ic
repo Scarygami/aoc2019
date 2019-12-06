@@ -1,0 +1,15 @@
+# WIP
+# For now this only reads the provided input until the end is reached
+
+# 0: Read next number from input
+3,11,
+# 2: Jump to end if input is zero
+1006,11,10,
+# 5: Output the last received number
+4,11,
+# 7: Jump to start
+1105,1,0,
+# 10: Program end
+99,
+# 11: Working memory starts here
+0
