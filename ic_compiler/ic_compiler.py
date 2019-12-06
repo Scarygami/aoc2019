@@ -1,5 +1,3 @@
-# Very simplistic and not very flexible compiler from IntCode-asm to IntCode
-
 import argparse
 
 VARIABLE = 1
