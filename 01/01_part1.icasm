@@ -1,0 +1,18 @@
+start:
+in mass
+jif mass, end
+# integer division starts here
+add 0, 0, div
+divloop:
+lt mass, 3, tmp1
+jit tmp1, enddiv
+add div, 1, div
+add mass, -3, mass
+jit 1, divloop
+enddiv:
+add div, -2, mass
+add total, mass, total
+jit 1, start
+end:
+out total
+halt
