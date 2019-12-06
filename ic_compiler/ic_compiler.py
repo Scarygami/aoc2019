@@ -65,18 +65,27 @@ def compile(filename):
     # Step 1: parse code
     for line in lines:
         ip = len(intcode)
-        if line[0] == "#":
-            # Skip comments
-            continue
 
-        if line[-1] == ":":
-            jp = line[:-1]
+        # Remove comments
+        if line.find('#') >= 0:
+            line = line.split('#')[0].strip()
+
+        # Detect jump points
+        if line.find(':') >= 0:
+            parts = line.split(':')
+            if len(parts) > 2:
+                raise SyntaxError("Only one jump point per line allowed")
+            jp = parts[0].strip()
+            line = parts[1].strip()
             if jp in jumppoints:
                 raise SyntaxError("Duplicate jump point %s is not possible." % jp)
             jumppoints[jp] = ip
-        else:
+
+        if line != "":
             intcode.extend(parseOperation(line, variables))
-            pass
+
+    # Add an extra halt at the very end
+    intcode.append(operations["halt"][0])
 
     # Step 2: resolve variable and jumppoint references
     intcode = [jumppoints[x[1]] if type(x) is tuple and x[0] == JUMPPOINT else x for x in intcode]
@@ -92,7 +101,7 @@ def compile(filename):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("input", help="Input file in IntCode-Assembler language")
+    parser.add_argument("input", help="Input file in IntCode-Assembly language")
     parser.add_argument("output", help="Generated output file in compiled IntCode (will be overwritten)")
     args = parser.parse_args()
 
