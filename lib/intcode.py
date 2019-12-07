@@ -208,7 +208,14 @@ def main():
     if args.debug:
         debug = True
 
-    run_intcode(source, inputs, 0, debug)
+    machine = State(0, source, inputs)
+    done = False
+    while not done:
+        machine = run_intcode(machine.memory, machine.inputs, machine.ip, debug, False)
+        if machine.waiting:
+            machine.inputs.append(int(input("Enter a number as value: ")))
+        else:
+            done = True
 
 if __name__ == "__main__":
     main()
