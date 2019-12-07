@@ -30,12 +30,12 @@ def run_intcode(inputfile, noun=None, verb=None):
 
     return intcode.run_intcode(memory)
 
-result, _ = run_intcode(os.path.join(currentdir, "input.txt"), 12, 2)
-print("Part 1: %s" % (result[0]))
+result = run_intcode(os.path.join(currentdir, "input.txt"), 12, 2)
+print("Part 1: %s" % (result.memory[0]))
 
 # Brute-forcing part 2, because too lazy to reverse-engineer the intcode
 for noun in range(0, 100):
     for verb in range(0, 100):
-        if run_intcode(os.path.join(currentdir, "input.txt"), noun, verb)[0][0] == 19690720:
+        if run_intcode(os.path.join(currentdir, "input.txt"), noun, verb).memory[0] == 19690720:
             print("Part 2: %s" % (100 * noun + verb))
             exit(0)

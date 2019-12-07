@@ -3,12 +3,14 @@ import argparse
 class State(object):
     """Representation of the current state of the Intcode application"""
 
-    def __init__(self, ip, memory, inputs=[], outputs=[], debug=False):
+    def __init__(self, ip, memory, inputs=[], outputs=[], debug=False, silent=False):
         self.ip = ip
         self.memory = [m for m in memory]
         self.inputs = [i for i in inputs]
         self.outputs = [o for o in outputs]
+        self.waiting = False
         self.debug = debug
+        self.silent = silent
 
     def __repr__(self):
         return "IP: %s\nMemory: %s" % (self.ip, self.memory)
@@ -58,12 +60,14 @@ def _multiply(state, mode):
     state.ip = state.ip + 4
 
 def _input(state, mode):
-    """Reads input from state or stdin and stores it in memory"""
+    """Reads input from state
+    If no input is available pause until resumed"""
     if mode % 10 == 0:
         if len(state.inputs) > 0:
             val = state.inputs.pop(0)
         else:
-            val = int(input("Please enter a number: "))
+            state.waiting = True
+            return
         state.setValue(1, val)
 
     state.ip = state.ip + 2
@@ -72,10 +76,11 @@ def _output(state, mode):
     """Outputs a value from memory to stdout and state."""
     val = state.getValue(1, mode)
     state.outputs.append(val)
-    if state.debug:
-        print("%s: %s" % (state.ip, val))
-    else:
-        print("%s" % val)
+    if not state.silent:
+        if state.debug:
+            print("%s: %s" % (state.ip, val))
+        else:
+            print("%s" % val)
 
     state.ip = state.ip + 2
 
@@ -145,7 +150,7 @@ def read_intcode(inputfile):
         fullinput = fullinput.replace(",", " ")
         return [int(part) for part in fullinput.split(" ") if part.strip() != ""]
 
-def run_intcode(memory, inputs=[], debug=False):
+def run_intcode(memory, inputs=[], ip=0, debug=False, silent=False):
     """Runs the Intcode provided as list
 
     Parameters
@@ -156,10 +161,19 @@ def run_intcode(memory, inputs=[], debug=False):
     inputs: list<int>
         List of input values to be used for input operations (not used yet)
 
-    Returns the latest version of the memory and the created outputs
+    ip: int
+        Lets the Intcode resume from a specified instruction pointer
+
+    debug: bool
+        outputs the current state on each instruction
+
+    silent: bool
+        don't product output to stdout
+
+    Returns the latest state after halting or pausing
     """
 
-    state = State(0, memory, inputs, [], debug)
+    state = State(ip, memory, inputs, [], debug, silent)
 
     while state.ip < len(state.memory):
         if state.debug:
@@ -171,10 +185,12 @@ def run_intcode(memory, inputs=[], debug=False):
         if opcode in _operations:
             mode = op // 100
             _operations[opcode](state, mode)
+            if state.waiting:
+                break
         else:
             raise IndexError("Invalid opcode: %s" % opcode)
 
-    return (state.memory, state.outputs)
+    return state
 
 def main():
     parser = argparse.ArgumentParser()
@@ -192,7 +208,7 @@ def main():
     if args.debug:
         debug = True
 
-    run_intcode(source, inputs, debug)
+    run_intcode(source, inputs, 0, debug)
 
 if __name__ == "__main__":
     main()

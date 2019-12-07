@@ -6,8 +6,8 @@ sys.path.insert(0, parentdir)
 
 from lib import intcode
 
-_, outputs = intcode.run_intcode(intcode.read_intcode(os.path.join(currentdir, "input.txt")), [1])
+outputs = intcode.run_intcode(intcode.read_intcode(os.path.join(currentdir, "input.txt")), [1]).outputs
 print("Part 1: %s" % outputs.pop())
 
-_, outputs = intcode.run_intcode(intcode.read_intcode(os.path.join(currentdir, "input.txt")), [5])
+outputs = intcode.run_intcode(intcode.read_intcode(os.path.join(currentdir, "input.txt")), [5]).outputs
 print("Part 2: %s" % outputs.pop())
