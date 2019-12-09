@@ -1,24 +1,65 @@
 import argparse
 
-class State(object):
-    """Representation of the current state of the Intcode application"""
+class IntcodeVM(object):
+    """Computer executing Intcode code"""
 
-    def __init__(self, ip, memory, inputs=[], outputs=[], base=0, debug=False, silent=False):
-        self.ip = ip
-        self.memory = [m for m in memory]
-        self.inputs = [i for i in inputs]
-        self.outputs = [o for o in outputs]
-        self.base = base
-        self.waiting = False
+    def __init__(self, code, debug=False, silent=False):
+        """Constructor
+
+        Parameters
+        ----------
+        code : list<int>
+            List of Intcode
+
+        debug : bool
+            If true detailed state of the VM will be printed on each statement
+
+        silent: bool
+            If true the output statement doesn't write to stdout
+        """
+
+        self.initial_memory = {}
+        for i, m in enumerate(code):
+            if m != 0:
+                self.initial_memory[i] = m
+
+        self.waiting = True
+        self.ip = 0
+        self.base = 0
+        self.inputs = []
+        self.outputs = []
         self.debug = debug
         self.silent = silent
+
+    @classmethod
+    def read_intcode(cls, inputfile):
+        """Reads Intcode from a file and returns a memory list.
+        Can also be used for files containing input data.
+
+        Adjusted to allow intcode in multiple lines with #-lines for comments
+        Also allows space-separated or newline-separated input without commas
+
+        Parameters
+        ----------
+        inputfile : str
+            Name/path of file that contains the int values
+        """
+
+        with open(inputfile, "r") as f:
+            fullinput = ""
+            for line in f:
+                if line[0] == "#":
+                    continue
+                fullinput = fullinput + " " + line
+            fullinput = fullinput.replace(",", " ")
+            return [int(part) for part in fullinput.split(" ") if part.strip() != ""]
 
     def __repr__(self):
         return "IP: %s\nMemory: %s\nBase: %s\n" % (self.ip, self.memory, self.base)
 
-    def getValue(self, count, mode):
-        """Retrieves a parameter value from memory
-
+    def _getAddress(self, count, mode):
+        """Determines at what address to read data based on mode
+        
         Parameters
         ----------
         count: int
@@ -29,18 +70,30 @@ class State(object):
         """
         parameterMode = (mode // (10**(count - 1))) % 10
         if parameterMode == 0:
-            address = self.memory[self.ip + count]
+            address = self.memory.get(self.ip + count, 0)
         elif parameterMode == 1:
             address = self.ip + count
         elif parameterMode == 2:
-            address = self.base + self.memory[self.ip + count]
+            address = self.base + self.memory.get(self.ip + count, 0)
 
-        if address < len(self.memory):
-            return self.memory[address]
+        return address
 
-        return 0
+    def _getValue(self, count, mode):
+        """Retrieves a parameter value from memory
 
-    def setValue(self, count, value, mode=0):
+        Parameters
+        ----------
+        count: int
+            Which parameter to retrieve (1-based), relative to ip
+
+        mode: int
+            The full parameter mode provided with the operation
+        """
+        address = self._getAddress(count, mode)
+
+        return self.memory.get(address, 0)
+
+    def _setValue(self, count, value, mode=0):
         """Sets a value in memory
 
         Parameters
@@ -51,166 +104,142 @@ class State(object):
         value: int
             The value to set
         """
-        parameterMode = (mode // (10**(count - 1))) % 10
-        if parameterMode == 0:
-            address = self.memory[self.ip + count]
-        elif parameterMode == 1:
-            address = self.ip + count
-        elif parameterMode == 2:
-            address = self.base + self.memory[self.ip + count]
+        address = self._getAddress(count, mode)
 
-        while address >= len(self.memory):
-            # This will most likely get me in trouble eventually...
-            self.memory.append(0)
-
-        self.memory[address] = value
-
-def _add(state, mode):
-    """Performs an add operation."""
-    state.setValue(3, state.getValue(1, mode) + state.getValue(2, mode), mode)
-
-    state.ip = state.ip + 4
-
-def _multiply(state, mode):
-    """Performs a multipy operation."""
-    state.setValue(3, state.getValue(1, mode) * state.getValue(2, mode), mode)
-
-    state.ip = state.ip + 4
-
-def _input(state, mode):
-    """Reads input from state
-    If no input is available pause until resumed"""
-    if len(state.inputs) > 0:
-        val = state.inputs.pop(0)
-    else:
-        state.waiting = True
-        return
-    state.setValue(1, val, mode)
-    state.ip = state.ip + 2
-
-def _output(state, mode):
-    """Outputs a value from memory to stdout and state."""
-    val = state.getValue(1, mode)
-    state.outputs.append(val)
-    if not state.silent:
-        if state.debug:
-            print("%s: %s" % (state.ip, val))
+        if value == 0:
+            self.memory.pop(address, 0)
         else:
-            print("%s" % val)
+            self.memory[address] = value
 
-    state.ip = state.ip + 2
+    def _add(self, mode):
+        """Performs an add operation."""
+        self._setValue(3, self._getValue(1, mode) + self._getValue(2, mode), mode)
 
-def _jump_if_true(state, mode):
-    """Jumps to new instruction pointer on truthy value"""
-    if state.getValue(1, mode) != 0:
-        state.ip = state.getValue(2, mode)
-    else:
-        state.ip = state.ip + 3
+        self.ip = self.ip + 4
 
-def _jump_if_false(state, mode):
-    """Jumps to new instruction pointer on falsy value"""
-    if state.getValue(1, mode) == 0:
-        state.ip = state.getValue(2, mode)
-    else:
-        state.ip = state.ip + 3
+    def _multiply(self, mode):
+        """Performs a multipy operation."""
+        self._setValue(3, self._getValue(1, mode) * self._getValue(2, mode), mode)
 
-def _less_than(state, mode):
-    """Checks if first value is less than second value"""
-    if state.getValue(1, mode) < state.getValue(2, mode):
-        state.setValue(3, 1, mode)
-    else:
-        state.setValue(3, 0, mode)
+        self.ip = self.ip + 4
 
-    state.ip = state.ip + 4
+    def _input(self, mode):
+        """Reads input from state
+        If no input is available pause until resumed"""
+        if len(self.inputs) > 0:
+            val = self.inputs.pop(0)
+        else:
+            self.waiting = True
+            return
+        self._setValue(1, val, mode)
+        self.ip = self.ip + 2
 
-def _equals(state, mode):
-    """Checks if two value are equal"""
-    if state.getValue(1, mode) == state.getValue(2, mode):
-        state.setValue(3, 1, mode)
-    else:
-        state.setValue(3, 0, mode)
+    def _output(self, mode):
+        """Outputs a value from memory to stdout and state."""
+        val = self._getValue(1, mode)
+        self.outputs.append(val)
+        if not self.silent:
+            if self.debug:
+                print("%s: %s" % (self.ip, val))
+            else:
+                print("%s" % val)
 
-    state.ip = state.ip + 4
+        self.ip = self.ip + 2
 
-def _adjust_base(state, mode):
-    """Adjust the base for relative addresses"""
-    state.base = state.base + state.getValue(1, mode)
-    state.ip = state.ip + 2
+    def _jump_if_true(self, mode):
+        """Jumps to new instruction pointer on truthy value"""
+        if self._getValue(1, mode) != 0:
+            self.ip = self._getValue(2, mode)
+        else:
+            self.ip = self.ip + 3
 
-_operations = {
-    1: _add,
-    2: _multiply,
-    3: _input,
-    4: _output,
-    5: _jump_if_true,
-    6: _jump_if_false,
-    7: _less_than,
-    8: _equals,
-    9: _adjust_base
-}
+    def _jump_if_false(self, mode):
+        """Jumps to new instruction pointer on falsy value"""
+        if self._getValue(1, mode) == 0:
+            self.ip = self._getValue(2, mode)
+        else:
+            self.ip = self.ip + 3
 
-def read_intcode(inputfile):
-    """Reads Intcode from a file and returns a memory list
+    def _less_than(self, mode):
+        """Checks if first value is less than second value"""
+        if self._getValue(1, mode) < self._getValue(2, mode):
+            self._setValue(3, 1, mode)
+        else:
+            self._setValue(3, 0, mode)
 
-    Adjusted to allow intcode in multiple lines with #-lines for comments
-    Also allows space-separated or newline-separated input without commas
+        self.ip = self.ip + 4
 
-    Parameters
-    ----------
-    inputfile : str
-        Name/path of file that contains the Intcode
-    """
+    def _equals(self, mode):
+        """Checks if two value are equal"""
+        if self._getValue(1, mode) == self._getValue(2, mode):
+            self._setValue(3, 1, mode)
+        else:
+            self._setValue(3, 0, mode)
 
-    with open(inputfile, "r") as f:
-        fullinput = ""
-        for line in f:
-            if line[0] == "#":
-                continue
-            fullinput = fullinput + " " + line
-        fullinput = fullinput.replace(",", " ")
-        return [int(part) for part in fullinput.split(" ") if part.strip() != ""]
+        self.ip = self.ip + 4
 
-def run_intcode(memory, inputs=[], ip=0, debug=False, silent=False):
-    """Runs the Intcode provided as list
+    def _adjust_base(self, mode):
+        """Adjust the base for relative addresses"""
+        self.base = self.base + self._getValue(1, mode)
+        self.ip = self.ip + 2
 
-    Parameters
-    ----------
-    memory : list<int>
-        The Intcode provided as list of int values
+    def run(self, inputs=[]):
+        """Starts the program from the beginning with the initial code and memory.
+        
+        Parameters
+        ----------
+        inputs : list<int>
+            List of input values to be used
+        """
+        self.ip = 0
+        self.base = 0
+        self.inputs = []
+        self.outputs = []
+        self.memory = self.initial_memory.copy()
 
-    inputs: list<int>
-        List of input values to be used for input operations (not used yet)
+        return self.resume(inputs)
 
-    ip: int
-        Lets the Intcode resume from a specified instruction pointer
+    def resume(self, inputs=[]):
+        """Resumes the program from the latest instruction pointer and state
 
-    debug: bool
-        outputs the current state on each instruction
+        Parameters
+        ----------
+        inputs : list<int>
+            List of input values to be used
+        """
 
-    silent: bool
-        don't product output to stdout
+        self.inputs.extend(inputs)
+        self.waiting = False
+        self.outputs = []
 
-    Returns the latest state after halting or pausing
-    """
+        _operations = {
+            1: self._add,
+            2: self._multiply,
+            3: self._input,
+            4: self._output,
+            5: self._jump_if_true,
+            6: self._jump_if_false,
+            7: self._less_than,
+            8: self._equals,
+            9: self._adjust_base
+        }
 
-    state = State(ip, memory, inputs, [], 0, debug, silent)
-
-    while state.ip < len(state.memory):
-        if state.debug:
-            print(state)
-        op = state.memory[state.ip]
-        opcode = op % 100
-        if opcode == 99:
-            break
-        if opcode in _operations:
-            mode = op // 100
-            _operations[opcode](state, mode)
-            if state.waiting:
+        while True:
+            if self.debug:
+                print(self)
+            op = self.memory[self.ip]
+            opcode = op % 100
+            if opcode == 99:
                 break
-        else:
-            raise IndexError("Invalid opcode: %s" % opcode)
+            if opcode in _operations:
+                mode = op // 100
+                _operations[opcode](mode)
+                if self.waiting:
+                    break
+            else:
+                raise IndexError("Invalid opcode: %s" % opcode)
 
-    return state
+        return self.outputs.copy()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -219,23 +248,21 @@ def main():
     parser.add_argument("-d", "--debug", help="Whether to run the program in debug mode", action="store_true")
     args = parser.parse_args()
 
-    source = read_intcode(args.source)
+    source = IntcodeVM.read_intcode(args.source)
 
     inputs = []
     if args.input:
-        inputs = read_intcode(args.input)
+        inputs = IntcodeVM.read_intcode(args.input)
     debug = False
     if args.debug:
         debug = True
 
-    machine = State(0, source, inputs)
-    done = False
-    while not done:
-        machine = run_intcode(machine.memory, machine.inputs, machine.ip, debug, False)
+    machine = IntcodeVM(source, debug)
+    while machine.waiting:
+        machine.run(inputs)
         if machine.waiting:
-            machine.inputs.append(int(input("Enter a number as value: ")))
-        else:
-            done = True
+            value = int(input("Enter a number as value: "))
+            machine.resume([value])
 
 if __name__ == "__main__":
     main()

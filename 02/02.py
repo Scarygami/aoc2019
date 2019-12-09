@@ -4,7 +4,7 @@ currentdir = os.path.dirname(os.path.abspath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
-from lib import intcode
+from lib.intcode import IntcodeVM
 
 def run_intcode(inputfile, noun=None, verb=None):
     """Runs the Intcode provided in inputfile
@@ -21,14 +21,16 @@ def run_intcode(inputfile, noun=None, verb=None):
         Fixed value to put into memory[2]
     """
 
-    memory = intcode.read_intcode(inputfile)
+    memory = IntcodeVM.read_intcode(inputfile)
 
     if noun is not None:
         memory[1] = noun
     if verb is not None:
         memory[2] = verb
 
-    return intcode.run_intcode(memory)
+    machine = IntcodeVM(memory)
+    machine.run()
+    return machine
 
 result = run_intcode(os.path.join(currentdir, "input.txt"), 12, 2)
 print("Part 1: %s" % (result.memory[0]))
