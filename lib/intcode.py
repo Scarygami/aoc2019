@@ -3,17 +3,18 @@ import argparse
 class State(object):
     """Representation of the current state of the Intcode application"""
 
-    def __init__(self, ip, memory, inputs=[], outputs=[], debug=False, silent=False):
+    def __init__(self, ip, memory, inputs=[], outputs=[], base=0, debug=False, silent=False):
         self.ip = ip
         self.memory = [m for m in memory]
         self.inputs = [i for i in inputs]
         self.outputs = [o for o in outputs]
+        self.base = base
         self.waiting = False
         self.debug = debug
         self.silent = silent
 
     def __repr__(self):
-        return "IP: %s\nMemory: %s" % (self.ip, self.memory)
+        return "IP: %s\nMemory: %s\nBase: %s\n" % (self.ip, self.memory, self.base)
 
     def getValue(self, count, mode):
         """Retrieves a parameter value from memory
@@ -28,11 +29,18 @@ class State(object):
         """
         parameterMode = (mode // (10**(count - 1))) % 10
         if parameterMode == 0:
-            return self.memory[self.memory[self.ip + count]]
+            address = self.memory[self.ip + count]
+        elif parameterMode == 1:
+            address = self.ip + count
+        elif parameterMode == 2:
+            address = self.base + self.memory[self.ip + count]
 
-        return self.memory[self.ip + count]
+        if address < len(self.memory):
+            return self.memory[address]
 
-    def setValue(self, count, value):
+        return 0
+
+    def setValue(self, count, value, mode=0):
         """Sets a value in memory
 
         Parameters
@@ -43,33 +51,41 @@ class State(object):
         value: int
             The value to set
         """
-        self.memory[self.memory[self.ip + count]] = value
+        parameterMode = (mode // (10**(count - 1))) % 10
+        if parameterMode == 0:
+            address = self.memory[self.ip + count]
+        elif parameterMode == 1:
+            address = self.ip + count
+        elif parameterMode == 2:
+            address = self.base + self.memory[self.ip + count]
+
+        while address >= len(self.memory):
+            # This will most likely get me in trouble eventually...
+            self.memory.append(0)
+
+        self.memory[address] = value
 
 def _add(state, mode):
     """Performs an add operation."""
-    if mode // 100 == 0:
-        state.setValue(3, state.getValue(1, mode) + state.getValue(2, mode))
+    state.setValue(3, state.getValue(1, mode) + state.getValue(2, mode), mode)
 
     state.ip = state.ip + 4
 
 def _multiply(state, mode):
     """Performs a multipy operation."""
-    if mode // 100 == 0:
-        state.setValue(3, state.getValue(1, mode) * state.getValue(2, mode))
+    state.setValue(3, state.getValue(1, mode) * state.getValue(2, mode), mode)
 
     state.ip = state.ip + 4
 
 def _input(state, mode):
     """Reads input from state
     If no input is available pause until resumed"""
-    if mode % 10 == 0:
-        if len(state.inputs) > 0:
-            val = state.inputs.pop(0)
-        else:
-            state.waiting = True
-            return
-        state.setValue(1, val)
-
+    if len(state.inputs) > 0:
+        val = state.inputs.pop(0)
+    else:
+        state.waiting = True
+        return
+    state.setValue(1, val, mode)
     state.ip = state.ip + 2
 
 def _output(state, mode):
@@ -100,23 +116,26 @@ def _jump_if_false(state, mode):
 
 def _less_than(state, mode):
     """Checks if first value is less than second value"""
-    if mode // 100 == 0:
-        if state.getValue(1, mode) < state.getValue(2, mode):
-            state.setValue(3, 1)
-        else:
-            state.setValue(3, 0)
+    if state.getValue(1, mode) < state.getValue(2, mode):
+        state.setValue(3, 1, mode)
+    else:
+        state.setValue(3, 0, mode)
 
     state.ip = state.ip + 4
 
 def _equals(state, mode):
     """Checks if two value are equal"""
-    if mode // 100 == 0:
-        if state.getValue(1, mode) == state.getValue(2, mode):
-            state.setValue(3, 1)
-        else:
-            state.setValue(3, 0)
+    if state.getValue(1, mode) == state.getValue(2, mode):
+        state.setValue(3, 1, mode)
+    else:
+        state.setValue(3, 0, mode)
 
     state.ip = state.ip + 4
+
+def _adjust_base(state, mode):
+    """Adjust the base for relative addresses"""
+    state.base = state.base + state.getValue(1, mode)
+    state.ip = state.ip + 2
 
 _operations = {
     1: _add,
@@ -126,7 +145,8 @@ _operations = {
     5: _jump_if_true,
     6: _jump_if_false,
     7: _less_than,
-    8: _equals
+    8: _equals,
+    9: _adjust_base
 }
 
 def read_intcode(inputfile):
@@ -173,7 +193,7 @@ def run_intcode(memory, inputs=[], ip=0, debug=False, silent=False):
     Returns the latest state after halting or pausing
     """
 
-    state = State(ip, memory, inputs, [], debug, silent)
+    state = State(ip, memory, inputs, [], 0, debug, silent)
 
     while state.ip < len(state.memory):
         if state.debug:
