@@ -21,14 +21,6 @@ def read_asteroids(filename):
 
     return asteroids
 
-def sign(num):
-    """Return sign (1 for positive, -1 for negative, 0 for number) of a number"""
-    if num > 0:
-        return 1
-    if num < 0:
-        return -1
-    return 0
-
 def prefilter_blocks(asteroids, asteroid1, asteroid2):
     """Returns all asteroids that are potentially between asteroid1 and asteroid2"""
 
@@ -51,6 +43,23 @@ def prefilter_blocks(asteroids, asteroid1, asteroid2):
 
     return blocks
 
+def calc_angle(asteroid1, asteroid2):
+    """Calculates the angle from asteroid1 to asteroid2
+    up = 0, angle increases clockwise
+    """
+    x1, y1 = asteroid1
+    x2, y2 = asteroid2
+    if x1 == x2:
+        if y2 < y1:
+            return 0
+        return 180
+    dx = x2 - x1
+    dy = y1 - y2
+    angle = math.degrees(math.atan2(dy, dx)) - 90
+    angle = 360 - angle
+    if angle >= 360:
+        angle = angle - 360
+    return angle
 
 def calc_visibility(asteroid, asteroids):
     """Returns a list of asteroids that are visibible from one specific one"""
@@ -60,22 +69,12 @@ def calc_visibility(asteroid, asteroids):
         if (x1, y1) == (x2, y2):
             continue
 
-        dx1 = x2 - x1
-        dy1 = y2 - y1
+        angle1 = calc_angle((x1, y1), (x2, y2))
 
         free_sight = True
         for (x3, y3) in prefilter_blocks(asteroids, (x1, y1), (x2, y2)):
-            dx2 = x3 - x1
-            dy2 = y3 - y1
-
-            if dx1 == 0:
-                m1 = dx1 / dy1
-                m2 = dx2 / dy2
-            else:
-                m1 = dy1 / dx1
-                m2 = dy2 / dx2
-            if m1 == m2:
-                # Same slope
+            angle2 = calc_angle((x1, y1), (x3, y3))
+            if angle1 == angle2:
                 free_sight = False
                 break
 
@@ -124,24 +123,6 @@ def best_location(filename):
             best_visibility = visibility
 
     return (best_asteroid, best_visibility)
-
-def calc_angle(asteroid1, asteroid2):
-    """Calculates the angle from asteroid1 to asteroid2
-    up = 0, angle increases clockwise
-    """
-    x1, y1 = asteroid1
-    x2, y2 = asteroid2
-    if x1 == x2:
-        if y2 < y1:
-            return 0
-        return 180
-    dx = x2 - x1
-    dy = y1 - y2
-    angle = math.degrees(math.atan2(dy, dx)) - 90
-    angle = 360 - angle
-    if angle >= 360:
-        angle = angle - 360
-    return angle
 
 def destroy_200(filename, laser):
     """Part 2 of the challenge"""
