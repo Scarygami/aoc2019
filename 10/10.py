@@ -21,30 +21,8 @@ def read_asteroids(filename):
 
     return asteroids
 
-def prefilter_blocks(asteroids, asteroid1, asteroid2):
-    """Returns all asteroids that are potentially between asteroid1 and asteroid2"""
-
-    blocks = []
-    x1 = min(asteroid1[0], asteroid2[0])
-    x2 = max(asteroid1[0], asteroid2[0])
-    y1 = min(asteroid1[1], asteroid2[1])
-    y2 = max(asteroid1[1], asteroid2[1])
-
-    for (x, y) in asteroids:
-        if (x, y) == asteroid1 or (x, y) == asteroid2:
-            continue
-        if x < x1 or x > x2 or y < y1 or y > y2:
-            continue
-        if x1 != x2 and (x == x1 or x == x2):
-            continue
-        if y1 != y2 and (y == y1 or y == y2):
-            continue
-        blocks.append((x, y))
-
-    return blocks
-
 def calc_angle(asteroid1, asteroid2):
-    """Calculates the angle from asteroid1 to asteroid2
+    """Calculates the angle in degress from asteroid1 to asteroid2
     up = 0, angle increases clockwise
     """
     x1, y1 = asteroid1
@@ -61,25 +39,44 @@ def calc_angle(asteroid1, asteroid2):
         angle = angle - 360
     return angle
 
-def calc_visibility(asteroid, asteroids):
-    """Returns a list of asteroids that are visibible from one specific one"""
-    x1, y1 = asteroid
-    visibilities = []
-    for (x2, y2) in asteroids:
-        if (x1, y1) == (x2, y2):
+def calc_distance(asteroid1, asteroid2):
+    """Calculates the distance between two asteroids"""
+    x1, y1 = asteroid1
+    x2, y2 = asteroid2
+    dx = x2 - x1
+    dy = y2 - y1
+    return math.sqrt(dx * dx + dy * dy)
+
+def detectable(asteroid1, asteroid2, asteroids):
+    """Returns true if asteroid2 is detectable from asteroid1, considering all asteroids"""
+    angle1 = calc_angle(asteroid1, asteroid2)
+    dist1 = calc_distance(asteroid1, asteroid2)
+
+    for asteroid in asteroids:
+        if asteroid == asteroid1 or asteroid == asteroid2:
             continue
 
-        angle1 = calc_angle((x1, y1), (x2, y2))
+        dist2 = calc_distance(asteroid1, asteroid)
+        if dist2 > dist1:
+            continue
 
-        free_sight = True
-        for (x3, y3) in prefilter_blocks(asteroids, (x1, y1), (x2, y2)):
-            angle2 = calc_angle((x1, y1), (x3, y3))
-            if angle1 == angle2:
-                free_sight = False
-                break
+        angle2 = calc_angle(asteroid1, asteroid)
+        if angle1 != angle2:
+            continue
 
-        if free_sight:
-            visibilities.append((x2, y2))
+        return False
+
+    return True
+
+def calc_visibility(asteroid, asteroids):
+    """Returns a list of asteroids that are visibible from one specific one"""
+    visibilities = []
+    for asteroid2 in asteroids:
+        if asteroid == asteroid2:
+            continue
+
+        if detectable(asteroid, asteroid2, asteroids):
+            visibilities.append(asteroid2)
 
     return visibilities
 
@@ -94,10 +91,10 @@ def calc_visibilities(asteroids):
     """
     visibilities = []
 
-    for a, (x1, y1) in enumerate(asteroids):
-        visibility = calc_visibility((x1, y1), asteroids[(a+1):])
+    for a, asteroid in enumerate(asteroids):
+        visibility = calc_visibility(asteroid, asteroids[(a+1):])
         for v in visibility:
-            visibilities.append(((x1, y1), v))
+            visibilities.append((asteroid, v))
 
     return visibilities
 
@@ -124,12 +121,20 @@ def best_location(filename):
 
     return (best_asteroid, best_visibility)
 
-def destroy_200(filename, laser):
-    """Part 2 of the challenge"""
+def use_laser(filename, laser, destroys=200):
+    """Uses the laser until the specified amount of asteroids are destroyed
+    
+    Returns x*100 + y of the last destroyed asteroid"""
+
     asteroids = read_asteroids(filename)
-    visibilities = calc_visibility(laser, asteroids)
+    visibilities = []
+    while len(visibilities) < destroys:
+        destroys = destroys - len(visibilities)
+        asteroids = [asteroid for asteroid in asteroids if asteroid not in visibilities]
+        visibilities = calc_visibility(laser, asteroids)
+
     visibilities.sort(key=lambda v: calc_angle(laser, v))
-    return visibilities[199][0] * 100 + visibilities[199][1]
+    return visibilities[destroys - 1][0] * 100 + visibilities[destroys - 1][1]
 
 assert best_location(os.path.join(currentdir, "testinput1.txt")) == ((3, 4), 8)
 assert best_location(os.path.join(currentdir, "testinput2.txt")) == ((5, 8), 33)
@@ -141,5 +146,16 @@ assert testresult == ((11, 13), 210)
 result = best_location(os.path.join(currentdir, "input.txt"))
 print("Part 1: %s %s" % result)
 
-assert destroy_200(os.path.join(currentdir, "testinput5.txt"), testresult[0]) == 802
-print("Part 2: %s" % destroy_200(os.path.join(currentdir, "input.txt"), result[0]))
+assert use_laser(os.path.join(currentdir, "testinput5.txt"), testresult[0], 1) == 1112
+assert use_laser(os.path.join(currentdir, "testinput5.txt"), testresult[0], 2) == 1201
+assert use_laser(os.path.join(currentdir, "testinput5.txt"), testresult[0], 3) == 1202
+assert use_laser(os.path.join(currentdir, "testinput5.txt"), testresult[0], 10) == 1208
+assert use_laser(os.path.join(currentdir, "testinput5.txt"), testresult[0], 20) == 1600
+assert use_laser(os.path.join(currentdir, "testinput5.txt"), testresult[0], 50) == 1609
+assert use_laser(os.path.join(currentdir, "testinput5.txt"), testresult[0], 100) == 1016
+assert use_laser(os.path.join(currentdir, "testinput5.txt"), testresult[0], 199) == 906
+assert use_laser(os.path.join(currentdir, "testinput5.txt"), testresult[0], 200) == 802
+assert use_laser(os.path.join(currentdir, "testinput5.txt"), testresult[0], 201) == 1009
+assert use_laser(os.path.join(currentdir, "testinput5.txt"), testresult[0], 299) == 1101
+
+print("Part 2: %s" % use_laser(os.path.join(currentdir, "input.txt"), result[0]))
