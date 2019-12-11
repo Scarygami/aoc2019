@@ -62,7 +62,6 @@ def paint_hull(inputfile, hull={}):
     return hull
 
 hull = paint_hull(IntcodeVM.read_intcode(os.path.join(currentdir, "input.txt")))
-
 print("Part 1: %s" % len(hull.keys()))
 print_hull(hull)
 
