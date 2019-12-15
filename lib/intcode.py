@@ -1,5 +1,6 @@
 import argparse
 
+
 class IntcodeVM(object):
     """Computer executing Intcode code"""
 
@@ -54,12 +55,25 @@ class IntcodeVM(object):
             fullinput = fullinput.replace(",", " ")
             return [int(part) for part in fullinput.split(" ") if part.strip() != ""]
 
+    def copy(self):
+        """Creates a new IntCode machine with exactly the same state as this one"""
+
+        machine = IntcodeVM(self.initial_memory.copy(), self.debug, self.silent)
+        machine.memory = self.memory.copy()
+        machine.inputs = self.inputs.copy()
+        machine.outputs = self.outputs.copy()
+        machine.ip = self.ip
+        machine.base = self.base
+        machine.waiting = self.waiting
+
+        return machine
+
     def __repr__(self):
         return "IP: %s\nMemory: %s\nBase: %s\n" % (self.ip, self.memory, self.base)
 
     def _getAddress(self, count, mode):
         """Determines at what address to read data based on mode
-        
+
         Parameters
         ----------
         count: int
@@ -185,7 +199,7 @@ class IntcodeVM(object):
 
     def run(self, inputs=[]):
         """Starts the program from the beginning with the initial code and memory.
-        
+
         Parameters
         ----------
         inputs : list<int>
@@ -241,10 +255,14 @@ class IntcodeVM(object):
 
         return self.outputs.copy()
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("source", help="Source code in IntCode")
-    parser.add_argument("-i", "--input", help="Optional file with inputs for the IntCode program, comma or whitespace separated")
+    parser.add_argument(
+        "-i", "--input",
+        help="Optional file with inputs for the IntCode program, comma or whitespace separated"
+    )
     parser.add_argument("-d", "--debug", help="Whether to run the program in debug mode", action="store_true")
     args = parser.parse_args()
 
@@ -263,6 +281,7 @@ def main():
         if machine.waiting:
             value = int(input("Enter a number as value: "))
             machine.resume([value])
+
 
 if __name__ == "__main__":
     main()
