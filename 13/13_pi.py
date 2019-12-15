@@ -36,19 +36,20 @@ GPIO.setup(14, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+
 def pi_input():
     while True:
         left = GPIO.input(14)
         middle = GPIO.input(15)
         right = GPIO.input(18)
 
-        if left == False:
+        if left is False:
             return -1
-        if middle == False:
+        if middle is False:
             return 0
-        if right == False:
+        if right is False:
             return 1
-           
+
 
 def play_game(inputfile, screen):
     source = IntcodeVM.read_intcode(inputfile)
@@ -98,7 +99,6 @@ def play_game(inputfile, screen):
         sleep(0.2)
 
         move = pi_input()
-
 
     screen.print_at(
         "Game over!",
