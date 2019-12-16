@@ -101,7 +101,7 @@ def explore(droid, position=(0, 0), area_map=None, distance_map=None, steps=0, s
 
 
 def maze(screen):
-    # Initiliase droid
+    # Initialise droid
     droid = IntcodeVM(IntcodeVM.read_intcode(os.path.join(currentdir, "input.txt")), False, True)
 
     # One run to determine the dimensions of the grid

@@ -1,5 +1,7 @@
 import os
 import math
+from time import time
+
 currentdir = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -27,7 +29,7 @@ def fft(signal, phases):
                 patterns[position] = create_pattern(position)
             pattern = patterns[position]
 
-            new_value = sum(v * pattern[p % len(pattern)] for p, v in enumerate(signal))
+            new_value = sum(v * pattern[(p + position) % len(pattern)] for p, v in enumerate(signal[position:]))
             new_signal.append(abs(new_value) % 10)
 
         second_half = fake_fft(signal, 1, middle)
@@ -35,7 +37,7 @@ def fft(signal, phases):
 
         signal = new_signal
 
-    return signal[0:8]
+    return signal
 
 
 def fake_fft(signal, phases=1, offset=0):
@@ -55,41 +57,47 @@ def fake_fft(signal, phases=1, offset=0):
     return signal
 
 
-def decode_message(signal, phases):
-    offset = sum(v * 10 ** (6 - p) for p, v in enumerate(signal[0: 7]))
-    signal = signal * 10000
-    if (offset < len(signal) // 2):
-        raise NotImplementedError
+def decode_message(signal, phases, real_signal=False):
+    if real_signal:
+        offset = sum(v * 10 ** (6 - p) for p, v in enumerate(signal[0: 7]))
+        signal = signal * 10000
+        if (offset < len(signal) // 2):
+            raise NotImplementedError
+        decoded_signal = fake_fft(signal, phases, offset)
+    else:
+        decoded_signal = fft(signal, phases)
 
-    decoded_signal = fake_fft(signal, phases, offset)
-    return decoded_signal[0: 8]
+    return "".join(map(lambda x: str(x), decoded_signal[0: 8]))
 
 
-def fft_from_file(filename, phases, real_signal=False):
+def decode_file(filename, phases, real_signal=False):
     with open(filename, "r") as f:
         line = f.read().splitlines()[0]
 
     signal = [int(c) for c in line]
 
-    if real_signal:
-        return decode_message(signal, phases)
-    else:
-        return fft(signal, phases)
+    return decode_message(signal, phases, real_signal)
 
 
-assert fft([1, 2, 3, 4, 5, 6, 7, 8], 1) == [4, 8, 2, 2, 6, 1, 5, 8]
-assert fft([1, 2, 3, 4, 5, 6, 7, 8], 2) == [3, 4, 0, 4, 0, 4, 3, 8]
-assert fft([1, 2, 3, 4, 5, 6, 7, 8], 3) == [0, 3, 4, 1, 5, 5, 1, 8]
-assert fft([1, 2, 3, 4, 5, 6, 7, 8], 4) == [0, 1, 0, 2, 9, 4, 9, 8]
+assert decode_message([1, 2, 3, 4, 5, 6, 7, 8], 1) == "48226158"
+assert decode_message([1, 2, 3, 4, 5, 6, 7, 8], 2) == "34040438"
+assert decode_message([1, 2, 3, 4, 5, 6, 7, 8], 3) == "03415518"
+assert decode_message([1, 2, 3, 4, 5, 6, 7, 8], 4) == "01029498"
 
-assert fft_from_file(os.path.join(currentdir, "testinput1.txt"), 100) == [2, 4, 1, 7, 6, 1, 7, 6]
-assert fft_from_file(os.path.join(currentdir, "testinput2.txt"), 100) == [7, 3, 7, 4, 5, 4, 1, 8]
-assert fft_from_file(os.path.join(currentdir, "testinput3.txt"), 100) == [5, 2, 4, 3, 2, 1, 3, 3]
+assert decode_file(os.path.join(currentdir, "testinput1.txt"), 100) == "24176176"
+assert decode_file(os.path.join(currentdir, "testinput2.txt"), 100) == "73745418"
+assert decode_file(os.path.join(currentdir, "testinput3.txt"), 100) == "52432133"
 
-print("Part 1: ", fft_from_file(os.path.join(currentdir, "input.txt"), 100))
+start = time()
+result = decode_file(os.path.join(currentdir, "input.txt"), 100)
+end = time()
+print("Part 1: %s (%.2f s)" % (result, end - start))
 
-assert fft_from_file(os.path.join(currentdir, "testinput4.txt"), 100, True) == [8, 4, 4, 6, 2, 0, 2, 6]
-assert fft_from_file(os.path.join(currentdir, "testinput5.txt"), 100, True) == [7, 8, 7, 2, 5, 2, 7, 0]
-assert fft_from_file(os.path.join(currentdir, "testinput6.txt"), 100, True) == [5, 3, 5, 5, 3, 7, 3, 1]
+assert decode_file(os.path.join(currentdir, "testinput4.txt"), 100, True) == "84462026"
+assert decode_file(os.path.join(currentdir, "testinput5.txt"), 100, True) == "78725270"
+assert decode_file(os.path.join(currentdir, "testinput6.txt"), 100, True) == "53553731"
 
-print("Part 2: ", fft_from_file(os.path.join(currentdir, "input.txt"), 100, True))
+start = time()
+result = decode_file(os.path.join(currentdir, "input.txt"), 100, True)
+end = time()
+print("Part 2: %s (%.2f s)" % (result, end - start))
