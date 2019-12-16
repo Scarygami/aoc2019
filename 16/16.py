@@ -17,10 +17,12 @@ def create_pattern(index):
 
 def fft(signal, phases):
     patterns = {}
+    middle = len(signal) // 2
 
     for _ in range(phases):
         new_signal = []
-        for position in range(len(signal)):
+
+        for position in range(middle):
             if position not in patterns:
                 patterns[position] = create_pattern(position)
             pattern = patterns[position]
@@ -28,18 +30,16 @@ def fft(signal, phases):
             new_value = sum(v * pattern[p % len(pattern)] for p, v in enumerate(signal))
             new_signal.append(abs(new_value) % 10)
 
+        second_half = fake_fft(signal, 1, middle)
+        new_signal.extend(second_half)
+
         signal = new_signal
 
     return signal[0:8]
 
 
-def fake_fft(signal, phases):
+def fake_fft(signal, phases=1, offset=0):
     """Beyond the halfway point the new value is always the sum of all items starting from position"""
-
-    offset = sum(v * 10 ** (6 - p) for p, v in enumerate(signal[0: 7]))
-    signal = signal * 10000
-    if (offset < len(signal) // 2):
-        raise NotImplementedError
 
     signal = signal[offset:]
     for _ in range(phases):
@@ -52,7 +52,17 @@ def fake_fft(signal, phases):
         new_signal.reverse()
         signal = new_signal
 
-    return signal[0:8]
+    return signal
+
+
+def decode_message(signal, phases):
+    offset = sum(v * 10 ** (6 - p) for p, v in enumerate(signal[0: 7]))
+    signal = signal * 10000
+    if (offset < len(signal) // 2):
+        raise NotImplementedError
+
+    decoded_signal = fake_fft(signal, phases, offset)
+    return decoded_signal[0: 8]
 
 
 def fft_from_file(filename, phases, real_signal=False):
@@ -62,7 +72,7 @@ def fft_from_file(filename, phases, real_signal=False):
     signal = [int(c) for c in line]
 
     if real_signal:
-        return fake_fft(signal, phases)
+        return decode_message(signal, phases)
     else:
         return fft(signal, phases)
 
