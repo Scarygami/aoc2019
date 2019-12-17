@@ -121,8 +121,8 @@ def find_path(grid):
 
 class GridDrawer(object):
     def __init__(self, screen):
-        self.x = 0
-        self.y = 0
+        self.x = 1
+        self.y = 1
         self.screen = screen
 
     def add_output(self, output):
@@ -131,16 +131,16 @@ class GridDrawer(object):
             return
 
         if output == 10:
-            if self.x == 0:
+            if self.x == 1:
                 # Last line reached
                 self.screen.move(0, 0)
                 self.screen.print_at(" ", 0, 0)
                 self.screen.refresh()
-                self.x = 0
-                self.y = 0
+                self.x = 1
+                self.y = 1
             else:
                 self.y = self.y + 1
-                self.x = 0
+                self.x = 1
         else:
             # Flipped output for better dimensions in terminal window
             output = chr(output)
