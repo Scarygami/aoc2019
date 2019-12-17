@@ -1,5 +1,6 @@
 import os
 import sys
+from time import sleep
 
 currentdir = os.path.dirname(os.path.abspath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -11,6 +12,12 @@ except ImportError:
     print("Intcode library could not be found")
     exit(1)
 
+try:
+    from asciimatics.screen import Screen
+except ImportError:
+    print("Couldn't find asciimatics package, please install with `pip install asciimatics`")
+    exit(1)
+
 
 def create_grid(inputfile):
     source = IntcodeVM.read_intcode(inputfile)
@@ -18,6 +25,7 @@ def create_grid(inputfile):
     outputs = machine.run()
     grid = []
     line = []
+
     for output in outputs:
         if output == 10:
             if len(line) > 0:
@@ -111,29 +119,74 @@ def find_path(grid):
     return ",".join(moves)
 
 
-def move_robot(inputfile, moves):
+class GridDrawer(object):
+    def __init__(self, screen):
+        self.x = 0
+        self.y = 0
+        self.screen = screen
+
+    def add_output(self, output):
+        if output > 255:
+            # Non ascii-character
+            return
+
+        if output == 10:
+            if self.x == 0:
+                # Last line reached
+                self.screen.move(0, 0)
+                self.screen.print_at(" ", 0, 0)
+                self.screen.refresh()
+                self.x = 0
+                self.y = 0
+            else:
+                self.y = self.y + 1
+                self.x = 0
+        else:
+            # Flipped output for better dimensions in terminal window
+            output = chr(output)
+            if output == "^":
+                output = "<"
+            elif output == ">":
+                output = "v"
+            elif output == "v":
+                output = ">"
+            elif output == "<":
+                output = "^"
+            elif output == ".":
+                output = " "
+
+            self.screen.print_at(output, self.y, self.x)
+            self.x = self.x + 1
+
+
+def move_robot(inputfile, moves, screen):
     source = IntcodeVM.read_intcode(inputfile)
+    drawer = GridDrawer(screen)
     source[0] = 2
-    machine = IntcodeVM(source, silent=True)
-    inputs = [ord(c) for c in moves]
-    outputs = machine.run(inputs)
+    machine = IntcodeVM(source, silent=True, output_func=drawer.add_output)
+    outputs = machine.run(moves)
+    sleep(2)
     return outputs.pop()
 
 
-grid = create_grid(os.path.join(currentdir, "input.txt"))
-print("Part 1: %s" % total_alignment(grid))
+def day_17(screen):
+    grid = create_grid(os.path.join(currentdir, "input.txt"))
+    print("Part 1: %s" % total_alignment(grid))
 
-print("Move sequence: %s" % find_path(grid))
+    print("Move sequence: %s" % find_path(grid))
 
-"""
-I've split up the movement instructions manually, after finding the full path,
-which was definitely quicker than finding an algorithm to do so for me:
+    """
+    I've split up the movement instructions manually, after finding the full path,
+    which was definitely quicker than finding an algorithm to do so for me:
 
-A = L,12,L,12,R,12
-B = L,8,L,8,R,12,L,8,L,8
-C = L,10,R,8,R,12
+    A = L,12,L,12,R,12
+    B = L,8,L,8,R,12,L,8,L,8
+    C = L,10,R,8,R,12
 
-A,A,B,C,C,A,B,C,A,B
-"""
-input_str = "A,A,B,C,C,A,B,C,A,B\nL,12,L,12,R,12\nL,8,L,8,R,12,L,8,L,8\nL,10,R,8,R,12\nn\n"
-print("Part 2: %s" % move_robot(os.path.join(currentdir, "input.txt"), input_str))
+    A,A,B,C,C,A,B,C,A,B
+    """
+    input_str = "A,A,B,C,C,A,B,C,A,B\nL,12,L,12,R,12\nL,8,L,8,R,12,L,8,L,8\nL,10,R,8,R,12\ny\n"
+    print("Part 2: %s" % move_robot(os.path.join(currentdir, "input.txt"), input_str, screen))
+
+
+Screen.wrapper(day_17)

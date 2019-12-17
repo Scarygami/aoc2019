@@ -4,7 +4,7 @@ import argparse
 class IntcodeVM(object):
     """Computer executing Intcode code"""
 
-    def __init__(self, code, debug=False, silent=False):
+    def __init__(self, code, debug=False, silent=False, output_func=None):
         """Constructor
 
         Parameters
@@ -17,6 +17,9 @@ class IntcodeVM(object):
 
         silent: bool
             If true the output statement doesn't write to stdout
+
+        output_func: function
+            Function that will be called with each output value
         """
 
         self.initial_memory = {}
@@ -31,6 +34,7 @@ class IntcodeVM(object):
         self.outputs = []
         self.debug = debug
         self.silent = silent
+        self.output_func = output_func
 
     @classmethod
     def read_intcode(cls, inputfile):
@@ -151,12 +155,17 @@ class IntcodeVM(object):
     def _output(self, mode):
         """Outputs a value from memory to stdout and state."""
         val = self._getValue(1, mode)
+
         self.outputs.append(val)
+
+        if self.output_func:
+            self.output_func(val)
+
         if not self.silent:
             if self.debug:
                 print("%s: %s" % (self.ip, val))
             else:
-                print("%s" % val)
+                print(val)
 
         self.ip = self.ip + 2
 
@@ -197,6 +206,12 @@ class IntcodeVM(object):
         self.base = self.base + self._getValue(1, mode)
         self.ip = self.ip + 2
 
+    def _prepareInput(self, inputs=[]):
+        if isinstance(inputs, str):
+            return [ord(c) for c in inputs]
+        else:
+            return inputs.copy()
+
     def run(self, inputs=[]):
         """Starts the program from the beginning with the initial code and memory.
 
@@ -222,7 +237,7 @@ class IntcodeVM(object):
             List of input values to be used
         """
 
-        self.inputs.extend(inputs)
+        self.inputs.extend(self._prepareInput(inputs))
         self.waiting = False
         self.outputs = []
 
