@@ -135,9 +135,9 @@ def shortest_path2(filename):
         break
 
     # BFS for all possible paths through maze
-    # state = (positions, keys): keys
+    # state = (positions, keys): steps
     states = {
-      ((starts[0], starts[1], starts[2], starts[3]), ""): 0
+      ((starts[0], starts[1], starts[2], starts[3]), frozenset()): 0
     }
 
     while True:
@@ -147,14 +147,14 @@ def shortest_path2(filename):
                 paths = find_next_keys(grid, position, keys)
                 for key, (new_position, new_steps) in paths.items():
                     new_steps = steps + new_steps
-                    new_keys = list(keys)
-                    new_keys.append(key)
-                    new_keys.sort()
-                    new_keys = "".join(new_keys)
+                    new_keys = set(keys)
+                    new_keys.add(key)
+                    new_keys = frozenset(new_keys)
 
                     new_positions = list(positions).copy()
                     new_positions[p] = new_position
                     new_positions = tuple(new_positions)
+
                     if (new_positions, new_keys) in new_states and new_states[(new_positions, new_keys)] <= new_steps:
                         # Exact same state already reached in fewer steps > skip
                         # This significantly reduced the search space
