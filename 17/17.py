@@ -66,18 +66,16 @@ def find_path(grid):
     # find position of robot
     for y in range(len(grid)):
         for x in range(len(grid[y])):
-            if grid[y][x] == "^":
+            if grid[y][x] in "^v<>":
                 position = (y, x)
-                direction = (-1, 0)
-            if grid[y][x] == "v":
-                position = (y, x)
-                direction = (1, 0)
-            if grid[y][x] == "<":
-                position = (y, x)
-                direction = (0, -1)
-            if grid[y][x] == ">":
-                position = (y, x)
-                direction = (0, 1)
+                if grid[y][x] == "^":
+                    direction = (-1, 0)
+                elif grid[y][x] == "v":
+                    direction = (1, 0)
+                elif grid[y][x] == "<":
+                    direction = (0, -1)
+                elif grid[y][x] == ">":
+                    direction = (0, 1)
 
     TURNS = {  # direction: [L, R]
       (-1, 0): [(0, -1), (0, 1)],
@@ -120,10 +118,12 @@ def find_path(grid):
 
 
 class GridDrawer(object):
+
     def __init__(self, screen):
         self.x = 1
         self.y = 1
         self.screen = screen
+        self.visited = []
 
     def add_output(self, output):
         if output > 255:
@@ -144,7 +144,7 @@ class GridDrawer(object):
         else:
             # Flipped output for better dimensions in terminal window
             output = chr(output)
-            if output == "^":
+            if output in "^":
                 output = "<"
             elif output == ">":
                 output = "v"
@@ -154,6 +154,14 @@ class GridDrawer(object):
                 output = "^"
             elif output == ".":
                 output = " "
+            elif output == "#":
+                if (self.x, self.y) in self.visited:
+                    output = "█"
+                else:
+                    output = "░"
+
+            if output in "^<>v":
+                self.visited.append((self.x, self.y))
 
             self.screen.print_at(output, self.y, self.x)
             self.x = self.x + 1
@@ -169,23 +177,67 @@ def move_robot(inputfile, moves, screen):
     return outputs.pop()
 
 
+def replace_sequence(sequence, part, letter):
+    length = len(part)
+    p = 0
+    new_sequence = []
+    while p < len(sequence):
+        if sequence[p:p+length] == part:
+            new_sequence.append(letter)
+            p = p + length
+        else:
+            new_sequence.append(sequence[p])
+            p = p + 1
+    return new_sequence
+
+
+def compress(sequence, left_parts="ABC"):
+    if isinstance(sequence, str):
+        sequence = sequence.split(",")
+
+    letter = left_parts[0]
+    left_parts = left_parts[1:]
+
+    start = 0
+    while sequence[start] in "ABC":
+        # Find the first position that hasn't been compressed yet
+        start = start + 1
+
+    for l in range(start, len(sequence)):
+        if sequence[l] in "ABC":
+            # reached a pre-compressed area
+            break
+
+        part = sequence[start:(l+1)]
+        part_str = ",".join(part)
+        if len(part_str) > 20:
+            # sequence has gotten too long
+            break
+
+        new_sequence = replace_sequence(sequence, part, letter)
+        if len(left_parts) > 0:
+            new_sequence_str, parts = compress(new_sequence, left_parts)
+            if not new_sequence_str:
+                continue
+            parts.insert(0, part_str)
+            return (new_sequence_str, parts)
+        else:
+            new_sequence_str = ",".join(new_sequence)
+            if len(new_sequence_str) > 20:
+                continue
+            return (new_sequence_str, [part_str])
+
+    # No solution found...
+    return (None, None)
+
+
 def day_17(screen):
     grid = create_grid(os.path.join(currentdir, "input.txt"))
     print("Part 1: %s" % total_alignment(grid))
 
-    print("Move sequence: %s" % find_path(grid))
-
-    """
-    I've split up the movement instructions manually, after finding the full path,
-    which was definitely quicker than finding an algorithm to do so for me:
-
-    A = L,12,L,12,R,12
-    B = L,8,L,8,R,12,L,8,L,8
-    C = L,10,R,8,R,12
-
-    A,A,B,C,C,A,B,C,A,B
-    """
-    input_str = "A,A,B,C,C,A,B,C,A,B\nL,12,L,12,R,12\nL,8,L,8,R,12,L,8,L,8\nL,10,R,8,R,12\ny\n"
+    sequence = find_path(grid)
+    main_sequence, parts = compress(sequence)
+    input_str = main_sequence + "\n" + "\n".join(parts) + "\ny\n"
     print("Part 2: %s" % move_robot(os.path.join(currentdir, "input.txt"), input_str, screen))
 
 
