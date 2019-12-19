@@ -9,7 +9,22 @@ DIRECTIONS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 
 def load_grid(filename):
     with open(filename, "r") as f:
-        return [[c for c in line] for line in f.read().splitlines()]
+        grid = [[c for c in line] for line in f.read().splitlines()]
+
+    while True:
+        removed = 0
+        for y in range(1, len(grid) - 1):
+            for x in range(1, len(grid[y]) - 1):
+                if grid[y][x] == "." or is_door(grid[y][x]):
+                    neighbours = [grid[y + dy][x + dx] for (dx, dy) in DIRECTIONS]
+                    if neighbours.count("#") == 3:
+                        grid[y][x] = "#"
+                        removed = removed + 1
+
+        if removed == 0:
+            break
+
+    return grid
 
 
 def is_key(c):
