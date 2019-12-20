@@ -7,23 +7,23 @@ currentdir = os.path.dirname(os.path.abspath(__file__))
 DIRECTIONS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 
 
-def load_grid(filename):
+def load_grid(filename, remove_dead_ends=False):
     with open(filename, "r") as f:
         grid = [[c for c in line] for line in f.read().splitlines()]
 
-    # Remove all dead ends
-    while True:
-        removed = 0
-        for y in range(3, len(grid) - 3):
-            for x in range(3, len(grid[y]) - 3):
-                if grid[y][x] == ".":
-                    neighbours = [grid[y + dy][x + dx] for (dx, dy) in DIRECTIONS]
-                    if neighbours.count("#") == 3:
-                        grid[y][x] = "#"
-                        removed = removed + 1
+    if remove_dead_ends:
+        while True:
+            removed = 0
+            for y in range(3, len(grid) - 3):
+                for x in range(3, len(grid[y]) - 3):
+                    if grid[y][x] == ".":
+                        neighbours = [grid[y + dy][x + dx] for (dx, dy) in DIRECTIONS]
+                        if neighbours.count("#") == 3:
+                            grid[y][x] = "#"
+                            removed = removed + 1
 
-        if removed == 0:
-            break
+            if removed == 0:
+                break
 
     # Find start, end and portals
     tmp_portals = {}
@@ -126,7 +126,7 @@ def is_outside_portal(grid, x, y):
 
 
 def shortest_path2(filename):
-    grid, portals, start, end = load_grid(filename)
+    grid, portals, start, end = load_grid(filename, True)
 
     visited = {(start, 0): 0}
 
