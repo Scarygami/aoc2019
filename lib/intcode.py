@@ -291,11 +291,10 @@ def main():
         debug = True
 
     machine = IntcodeVM(source, debug)
+    machine.run(inputs)
     while machine.waiting:
-        machine.run(inputs)
-        if machine.waiting:
-            value = int(input("Enter a number as value: "))
-            machine.resume([value])
+        value = int(input("Enter a number as value: "))
+        machine.resume([value])
 
 
 if __name__ == "__main__":
