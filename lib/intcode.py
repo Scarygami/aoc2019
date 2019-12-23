@@ -4,7 +4,7 @@ import argparse
 class IntcodeVM(object):
     """Computer executing Intcode code"""
 
-    def __init__(self, code, debug=False, silent=False, output_func=None):
+    def __init__(self, code, debug=False, silent=False, output_func=None, stepwise=False):
         """Constructor
 
         Parameters
@@ -20,6 +20,9 @@ class IntcodeVM(object):
 
         output_func: function
             Function that will be called with each output value
+
+        stepwise: bool
+            If true machine will pause after each step to allow concurrent machines
         """
 
         self.initial_memory = {}
@@ -35,6 +38,7 @@ class IntcodeVM(object):
         self.debug = debug
         self.silent = silent
         self.output_func = output_func
+        self.stepwise = stepwise
 
     @classmethod
     def read_intcode(cls, inputfile):
@@ -267,6 +271,9 @@ class IntcodeVM(object):
                     break
             else:
                 raise IndexError("Invalid opcode: %s" % opcode)
+
+            if self.stepwise:
+                break
 
         return self.outputs.copy()
 
