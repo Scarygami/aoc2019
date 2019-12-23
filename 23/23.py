@@ -11,88 +11,78 @@ except ImportError:
     exit(1)
 
 
-def handle_outputs(packets, outputs, n):
-    if len(outputs[n]) < 3:
-        return
+class Network(object):
 
-    end = (len(outputs[n]) // 3) * 3
+    def __init__(self, source, computers=50):
+        self.computers = []
+        self.packets = []
+        self.outputs = []
+        self.idle = []
+        self.nat_package = None
+        self.last_nat_package = None
 
-    for o in range(0, end, 3):
-        dest = outputs[n][o]
-        x = outputs[n][o + 1]
-        y = outputs[n][o + 2]
-        if dest == 255:
-            packets[dest] = [[x, y]]
-        else:
-            packets[dest].append([x, y])
+        for c in range(computers):
+            computer = IntcodeVM(source, silent=True)
+            self.idle.append(0)
+            self.packets.append([])
+            output = computer.run([c])
+            self.outputs.append(output)
+            computer.stepwise = True
+            self.computers.append(computer)
 
-    outputs[n] = outputs[n][end:]
+    def run(self, nat=False):
+        while True:
+            self.handle_outputs()
 
+            if nat:
+                if sum(1 for i in self.idle if i > 10) == len(self.computers) and self.nat_package:
+                    # all machines have been idle for a while
+                    self.packets[0].append(self.nat_package)
+                    self.idle[0] = 0
+                    if self.last_nat_package and self.last_nat_package[1] == self.nat_package[1]:
+                        return self.nat_package[1]
 
-def initialise_network(source):
-    machines = {}
-    packets = {}
-    outputs = {}
-    idle = {}
-    packets[255] = []
-
-    for n in range(50):
-        machine = IntcodeVM(source, silent=True)
-        idle[n] = 0
-        packets[n] = []
-        outputs[n] = []
-        output = machine.run([n])
-        if len(output) > 0:
-            outputs[n].extend(machine.run([n]))
-            handle_outputs(packets, outputs, n)
-
-        machine.stepwise = True
-        machines[n] = machine
-
-    return machines, packets, outputs, idle
-
-
-def run_network(source, nat=False):
-    machines, packets, outputs, idle = initialise_network(source)
-    last_nat_value = None
-
-    while True:
-        if nat:
-            if len([1 for state in idle if idle[state] > 10]) == 50 and len(packets[255]) > 0:
-                # all machines have been idle for a while
-                nat_value = packets[255][0]
-                packets[0].append(nat_value)
-                idle[0] = 0
-                if last_nat_value and last_nat_value == nat_value[1]:
-                    print("Part 2: %s" % nat_value[1])
-                    break
-                last_nat_value = nat_value[1]
-
-        for n in range(50):
-            machine = machines[n]
-            if machine.waiting:
-                if len(packets[n]) > 0:
-                    packet = packets[n].pop(0)
-                    output = machine.resume(packet)
-                    idle[n] = 0
-                else:
-                    output = machine.resume([-1])
-                    idle[n] = idle[n] + 1
+                    self.last_nat_package = self.nat_package.copy()
             else:
-                output = machine.resume()
+                if self.nat_package:
+                    return self.nat_package[1]
 
-            if len(output) > 0:
-                idle[n] = 0
-                outputs[n].extend(output)
-                handle_outputs(packets, outputs, n)
-                if not nat and len(packets[255]) > 0:
-                    print("Part 1: %s" % packets[255][0][1])
-                    break
-        else:
-            continue
-        break
+            for c, computer in enumerate(self.computers):
+                if computer.waiting:
+                    if len(self.packets[c]) > 0:
+                        packet = self.packets[c].pop(0)
+                        output = computer.resume(packet)
+                        self.idle[c] = 0
+                    else:
+                        output = computer.resume([-1])
+                        self.idle[c] = self.idle[c] + 1
+                else:
+                    output = computer.resume()
+
+                if len(output) > 0:
+                    self.idle[c] = 0
+                    self.outputs[c].extend(output)
+
+    def handle_outputs(self):
+        for c in range(len(self.computers)):
+            if len(self.outputs[c]) < 3:
+                continue
+
+            end = (len(self.outputs[c]) // 3) * 3
+
+            for o in range(0, end, 3):
+                dest = self.outputs[c][o]
+                x = self.outputs[c][o + 1]
+                y = self.outputs[c][o + 2]
+                if dest == 255:
+                    self.nat_package = [x, y]
+                else:
+                    self.packets[dest].append([x, y])
+
+            self.outputs[c] = self.outputs[c][end:]
 
 
 source = IntcodeVM.read_intcode(os.path.join(currentdir, "input.txt"))
-run_network(source, False)
-run_network(source, True)
+network = Network(source)
+print("Part 1: %s" % network.run())
+print("Part 2: %s" % network.run(True))
